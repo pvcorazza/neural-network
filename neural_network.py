@@ -21,11 +21,11 @@ class NeuralNetwork:
         # Camada de entrada para camada oculta
         self.W1 = 2*np.random.randn(self.num_hidden, self.num_inputs) - 1
         # Bias da camada de entrada
-        self.b1 = np.ones(shape=(self.num_hidden, 1), dtype=int)
+        self.b1 = np.ones(shape=(self.num_hidden, 1))
         # Camada oculta para camada de saída
         self.W2 = 2*np.random.randn(self.num_outputs, self.num_hidden) - 1
         # Bias da camada oculta
-        self.b2 = np.ones(shape=(self.num_outputs, 1), dtype=int)
+        self.b2 = np.ones(shape=(self.num_outputs, 1))
 
     # Função sigmóide
     def calculate_sigmoid(self, sum):
@@ -37,12 +37,7 @@ class NeuralNetwork:
         result = sig_result * (1-sig_result)
         return result
 
-    # Calcula novos pesos para camada
-    def calculate_new_weights(self, weights, layer, delta):
-        pesosNovo0 = np.dot(delta, layer.T)
-        weights = (weights * self.momentum) + ( pesosNovo0 * self.learning_rate)
-        return weights
-
+    # Necessário inserir a regularização
     def calculate_cost(self):
         cost = - np.sum(np.multiply(np.log(self.a3), self.outputs) + np.multiply((1 - self.outputs), np.log(1 - self.a3))) / self.num_examples
         return cost
@@ -57,22 +52,25 @@ class NeuralNetwork:
         z2 = np.dot(self.W1, self.a1) + self.b1
 
         # 2.a(l=k) = g(z(l=k))
-        self.a2 = self.calculate_sigmoid(z2)
+        self.a2 = np.tanh(z2)
 
         # 4.z(l=L) = θ(l=L-1) a(l=L-1)
         z3 = np.dot(self.W2, self.a2) + self.b2
+
         # 5. a(l=L) = g(z(l=L))
         self.a3 = self.calculate_sigmoid(z3)
+
         # 6.Retorna fθ(x(i)) = a(l=L)
         return self.a3
 
-    # Função de backpropagation
+        # Função de backpropagation
+
     def back_propagation(self, a3):
         # Calcular o valor de 𝛿 para os neurônios da camada de saída:
         # 1.2.𝛿(l=L) = fθ(x(i)) - y(i)
         error = a3 - self.outputs
 
-        #1.3.Para cada camada k=L-1…2 // calcula os deltas para as camadas ocultas
+        # 1.3.Para cada camada k=L-1…2 // calcula os deltas para as camadas ocultas
         # 𝛿(l=k) = [θ(l=k)]T 𝛿(l=k+1) .* a(l=k) .* (1-a(l=k))
 
         delta2 = error * self.calculate_derivative_sigmoid(a3)
@@ -81,31 +79,59 @@ class NeuralNetwork:
 
         return delta2, delta1
 
+    def backward_propagation(self):
+
+        # Vetor com gradientes dos pesos
+        self.dw = {}
+
+        # Vetor com gradientes de bias
+        self.db = {}
+
+        # Calcular o valor de 𝛿 para os neurônios da camada de saída:
+        # 1.2.𝛿(l=L) = fθ(x(i)) - y(i)
+        delta3 = self.a3 - self.outputs
+
+        #1.3.Para cada camada k=L-1…2 // calcula os deltas para as camadas ocultas
+        #𝛿(l=k) = [θ(l=k)]T 𝛿(l=k+1) .* a(l=k) .* (1-a(l=k))
+        delta2 = np.multiply(np.dot(self.W2.T, delta3), 1 - np.power(self.a2, 2))
+
+        # Armazena gradientes
+        self.dw[2] = (1 / self.num_examples) * np.dot(delta3, self.a2.T)
+        self.db[2] = (1 / self.num_examples) * np.sum(delta3, axis=1, keepdims=True)
+        self.dw[1] = (1 / self.num_examples) * np.dot(delta2, self.entries.T)
+        self.db[1] = (1 / self.num_examples) * np.sum(delta2, axis=1, keepdims=True)
+
+    def update_parameters(self):
+
+        self.W1 -= self.learning_rate * self.dw[1]
+        self.b1 -= self.learning_rate * self.db[1]
+        self.W2 -= self.learning_rate * self.dw[2]
+        self.b2 -= self.learning_rate * self.db[2]
+
+
     def train(self):
         self.init_random_weights()
         for i in range (self.epochs):
+            # Propagar o exemplo pela rede, calculando sua saída fθ(x)
+            self.forward_propagation(self.entries)
 
-            #Propagar o exemplo pela rede, calculando sua saída fθ(x)
-            a3 = self.forward_propagation(self.entries)
-
-            # #Calcula custo
-            # cost = self.calculate_cost()
-
+            # Calcula custo
+            cost = self.calculate_cost()
             erroCamadaSaida = self.a3 - self.outputs
             mediaAbsoluta = np.mean(np.abs(erroCamadaSaida))
 
+            self.backward_propagation()
 
-            #Backpropagation
-            output_delta, hidden_delta = self.back_propagation(a3)
-
-            #Atualiza pesos
-            self.W2 = self.calculate_new_weights(self.W2, self.a2, output_delta)
-            self.W1 = self.calculate_new_weights(self.W1, self.entries, hidden_delta)
+            self.update_parameters()
 
             # Print the cost every 1000 iterations
             if i % 1000 == 0:
-                # print("Cost after iteration %i: %f" % (i, cost))
-                print("Erro: " + str(mediaAbsoluta))
+                print(self.a3)
+                print("Cost after iteration %i: %f" % (i, cost))
+                print("Erro: %.8f" % mediaAbsoluta)
+
+
+
 
 
 

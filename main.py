@@ -17,9 +17,11 @@ if __name__ == '__main__':
     else:
         sys.exit('Error! The input format is: ./backpropagation network.txt initial_weights.txt dataset.txt')
 
-    # entries = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]])
+    np.set_printoptions(suppress=True)
+
+    entries = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]])
     entries = entries.T
-    # outputs = np.array([[0], [1], [1], [0]])
+    outputs = np.array([[0], [1], [1], [0]])
     outputs = outputs.T
 
     NN = NeuralNetwork(0.24, np.shape(entries)[0], 10, np.shape(outputs)[0], entries, outputs)

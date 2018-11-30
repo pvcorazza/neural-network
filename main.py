@@ -21,7 +21,7 @@ if __name__ == '__main__':
     entries = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]])
     outputs = np.array([[0], [1], [1], [0]])
 
-    layers_dims = (entries.shape[1], 7, 5, 3, outputs.shape[1])
+    layers_dims = (entries.shape[1], 7, 4, 5, outputs.shape[1])
 
     entries = entries.T
     outputs = outputs.T

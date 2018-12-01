@@ -100,8 +100,8 @@ class NeuralNetwork:
             A_prev, W, b = linear_cache
             m = A_prev.shape[1]
 
-            self.gradients["dW" + str(l + 1)] = 1. / m * np.dot(dZ, A_prev.T)
-            self.gradients["db" + str(l + 1)] = 1. / m * np.sum(dZ, axis=1, keepdims=True)
+            self.gradients["dW" + str(l + 1)] = 1 / m * np.dot(dZ, A_prev.T)
+            self.gradients["db" + str(l + 1)] = 1 / m * np.sum(dZ, axis=1, keepdims=True)
             self.gradients["dA" + str(l)] = np.dot(W.T, dZ)
 
     def update_parameters(self):

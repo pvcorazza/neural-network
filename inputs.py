@@ -138,13 +138,22 @@ def read_dataset_file(name):
     except:
         exit("Error while opening \"dataset.txt\"")
 
-    lines = (line.replace(';',',') for line in file)
-    data = np.genfromtxt(lines, dtype=float, delimiter=',')
 
-    outputs = data[:, -1]
-    entries = np.delete(data, -1, axis=1)
+    with open(name, 'r') as file:
+        lines = file.readlines()
 
-    return entries.astype(np.float), np.reshape(outputs.astype(int), (-1, 1))
+    entries = []
+    output = []
+
+    for line in lines:
+        layer = [neuron.split(',') for neuron in line.split(';')]
+        weights_array = np.asarray([[float(weight) for weight in entry] for entry in layer])
+        entries.append(weights_array[0])
+        output.append((weights_array[1]))
+
+
+    return np.asarray(entries), np.asarray(output)
+
 
 # Normalização das features
 def feature_normalization(data):

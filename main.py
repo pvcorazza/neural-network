@@ -20,13 +20,12 @@ if __name__ == '__main__':
 
     np.set_printoptions(suppress=True)
 
-
     entries = feature_normalization(entries)
     entries, outputs = get_transpose(entries, outputs)
 
     layers_dims = (entries.shape[0], 5, outputs.shape[0])
 
-    NN = NeuralNetwork(0.24, entries, outputs, layers_dims, epochs=10000)
+    NN = NeuralNetwork(0.7, entries, outputs, layers_dims, epochs=10000)
 
     NN.train()
 

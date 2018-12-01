@@ -56,7 +56,15 @@ class NeuralNetwork:
     # Necessário inserir a regularização
     def calculate_cost(self, AL):
         cost = - np.sum(np.multiply(np.log(AL), self.outputs) + np.multiply((1 - self.outputs), np.log(1 - AL))) / self.num_examples
-        return cost
+
+        sum = 0
+
+        for i in range(len(self.weights) // 2):
+            sum += np.sum(np.square(self.weights["W" + str(i + 1)]))
+
+        regularization = (1 / self.num_examples) * (self.reg_factor / 2) * sum
+
+        return cost + regularization
 
     # def backward_propagation(self):
     #
@@ -89,7 +97,7 @@ class NeuralNetwork:
 
         A_prev, W, b = linear_cache
 
-        self.gradients["dW" + str(len(caches))] = (1 / self.num_examples) * np.dot(dZ, A_prev.T)
+        self.gradients["dW" + str(len(caches))] = (1 / self.num_examples) * np.dot(dZ, A_prev.T) + self.reg_factor/self.num_examples * self.weights["W" + str(len(caches))]
         self.gradients["db" + str(len(caches))] = (1 / self.num_examples) * np.sum(dZ, axis=1, keepdims=True)
         self.gradients["dA" + str(len(caches) - 1)] = np.dot(W.T, dZ)
 
@@ -100,7 +108,7 @@ class NeuralNetwork:
             A_prev, W, b = linear_cache
             m = A_prev.shape[1]
 
-            self.gradients["dW" + str(l + 1)] = 1 / m * np.dot(dZ, A_prev.T)
+            self.gradients["dW" + str(l + 1)] = 1 / m * np.dot(dZ, A_prev.T) + self.reg_factor/self.num_examples * self.weights["W" + str(l + 1)]
             self.gradients["db" + str(l + 1)] = 1 / m * np.sum(dZ, axis=1, keepdims=True)
             self.gradients["dA" + str(l)] = np.dot(W.T, dZ)
 
@@ -111,7 +119,7 @@ class NeuralNetwork:
 
     def train(self):
 
-        np.random.seed(1)
+        # np.random.seed(1)
 
         # Inicia pesos aleatórios
         self.init_weights()

@@ -155,6 +155,7 @@ def read_dataset_file(name):
     return np.asarray(entries), np.asarray(output)
 
 
+
 # Normalização das features
 def feature_normalization(data):
     max = np.max(data, axis=0)

@@ -35,10 +35,10 @@ class NeuralNetwork:
         return result
 
     # Função de propagação
-    def forward_propagation(self):
+    def forward_propagation(self, entries):
         caches = []
         # 1.al=1 = x(i)
-        a = self.entries
+        a = entries
 
         for l in range(1, len(self.layers)):
             # 1.z(l=k) = θ(l=k-1) a(l=k-1)
@@ -118,7 +118,7 @@ class NeuralNetwork:
         for i in range(0, self.epochs):
 
             # Propagar o exemplo pela rede, calculando sua saída fθ(x)
-            AL, caches = self.forward_propagation()
+            AL, caches = self.forward_propagation(self.entries)
 
             # Calcula custo
             cost = self.calculate_cost(AL)
@@ -139,6 +139,21 @@ class NeuralNetwork:
                 print("Erro: %.8f" % mediaAbsoluta)
 
         return self.parameters
+
+    def predict(self, entry):
+
+        # Propagação
+        result, caches = self.forward_propagation(entry)
+
+        return result
+
+    def accuracy(self, input, output):
+
+        error=(self.predict(input)-output)
+        accuracy=1-abs(error[0][0])
+
+        print("Accuracy: " + str(accuracy))
+        return accuracy
 
 
 

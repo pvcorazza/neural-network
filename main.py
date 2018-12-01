@@ -26,12 +26,14 @@ if __name__ == '__main__':
     entries = entries.T
     outputs = outputs.T
 
-    NN = NeuralNetwork(0.24, entries, outputs, layers_dims)
+    NN = NeuralNetwork(0.24, entries, outputs, layers_dims, epochs=10000)
 
     NN.train()
 
-    output = NN.forward_propagation(entries)
-    print(output)
+    entry = np.array([[0, 0, 0]]).T
+    entry2 = np.array([[1, 0, 0]]).T
+
+    print(NN.accuracy(entry2, [[1]]))
 
 
 

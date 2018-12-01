@@ -1,7 +1,7 @@
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, reg_factor, entries, outputs, layers, learning_rate=1.2, epochs = 1000000):
+    def __init__(self, reg_factor, entries, outputs, layers, learning_rate=1.2, epochs = 1000000, weights=None):
 
         # Definição dos parâmetros
         self.reg_factor = reg_factor
@@ -11,18 +11,20 @@ class NeuralNetwork:
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.num_examples = np.shape(self.outputs)[1]
-        self.parameters = {}
+        self.weights = weights
         # self.momentum = 1
         self.J = []
         self.gradients = {}
 
     # Define pesos aleatórios para a rede
-    def init_random_weights(self):
-        for l in range(1, len(self.layers)):
-            # Pesos
-            self.parameters['W' + str(l)] = 2 * np.random.randn(self.layers[l], self.layers[l - 1]) - 1
-            # Bias
-            self.parameters['b' + str(l)] = np.ones(shape=(self.layers[l], 1))
+    def init_weights(self):
+        if (self.weights == None):
+            self.weights = {}
+            for l in range(1, len(self.layers)):
+                # Pesos
+                self.weights['W' + str(l)] = 2 * np.random.randn(self.layers[l], self.layers[l - 1]) - 1
+                # Bias
+                self.weights['b' + str(l)] = np.ones(shape=(self.layers[l], 1))
 
     # Função sigmóide
     def calculate_sigmoid(self, sum):
@@ -42,8 +44,8 @@ class NeuralNetwork:
 
         for l in range(1, len(self.layers)):
             # 1.z(l=k) = θ(l=k-1) a(l=k-1)
-            z = np.dot(self.parameters['W' + str(l)], a) + self.parameters['b' + str(l)]
-            linear_cache = (a, self.parameters['W' + str(l)], self.parameters['b' + str(l)])
+            z = np.dot(self.weights['W' + str(l)], a) + self.weights['b' + str(l)]
+            linear_cache = (a, self.weights['W' + str(l)], self.weights['b' + str(l)])
             a = self.calculate_sigmoid(z)
             cache = (linear_cache, z)
             caches.append(cache)
@@ -103,16 +105,16 @@ class NeuralNetwork:
             self.gradients["dA" + str(l)] = np.dot(W.T, dZ)
 
     def update_parameters(self):
-        for l in range(len(self.parameters) // 2):
-            self.parameters["W" + str(l + 1)] -= self.learning_rate * self.gradients["dW" + str(l + 1)]
-            self.parameters["b" + str(l + 1)] -= self.learning_rate * self.gradients["db" + str(l + 1)]
+        for l in range(len(self.weights) // 2):
+            self.weights["W" + str(l + 1)] -= self.learning_rate * self.gradients["dW" + str(l + 1)]
+            self.weights["b" + str(l + 1)] -= self.learning_rate * self.gradients["db" + str(l + 1)]
 
     def train(self):
 
         np.random.seed(1)
 
         # Inicia pesos aleatórios
-        self.init_random_weights()
+        self.init_weights()
 
         # Loop (gradient descent)
         for i in range(0, self.epochs):
@@ -135,10 +137,10 @@ class NeuralNetwork:
             if i % 1000 == 0:
                 print("Cost after iteration %i: %f" % (i, cost))
                 self.J.append(cost)
-                # print(AL)
+                print(AL)
                 print("Erro: %.8f" % mediaAbsoluta)
 
-        return self.parameters
+        return self.weights
 
     def predict(self, entry):
 

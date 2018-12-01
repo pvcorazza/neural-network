@@ -3,7 +3,6 @@ import csv
 
 import numpy as np
 
-
 def read_data(filename):
     if filename == "benchmark.csv":
         data = list(csv.reader(open("data/" + filename, "r"), delimiter=";"))
@@ -95,7 +94,7 @@ def read_data(filename):
 
         return data
 
-
+# Leitura do arquivo com informações sobre a rede neural
 def read_network_file(name):
 
     try:
@@ -109,12 +108,30 @@ def read_network_file(name):
 
     return reg_factor, network_info
 
+# Leitura do arquivo de pesos
+def read_weights_file(name):
+
+    with open(name, 'r') as file:
+        lines = file.readlines()
+
+    weights = {}
+    i=1
+    for line in lines:
+
+        layer = [neuron.split(',') for neuron in line.split(';')]
+        weights_array = np.asarray([[float(weight) for weight in entry] for entry in layer])
+        bias = weights_array[:, 0]
+        layer_weight = np.delete(weights_array, 0, axis=1)
+
+        weights['W' + str(i)] = layer_weight
+        weights['b' + str(i)] = np.reshape(bias,(len(bias),1))
+        i =i+1
+
+    return weights
+
+
+# Leitura do arquivo dataset
 def read_dataset_file(name):
-    """
-    Faz a leitura de arquivos do tipo dataset.txt.
-    Retorna uma lista de instâncias de treinamento, na qual cada instância é
-    uma tupla de duas listas: atributos e saídas esperadas.
-    """
 
     try:
         file = open(name, "r")
@@ -129,4 +146,17 @@ def read_dataset_file(name):
 
     return entries.astype(np.float), np.reshape(outputs.astype(int), (-1, 1))
 
+# Normalização das features
+def feature_normalization(data):
+    max = np.max(data, axis=0)
+    min = np.min(data, axis=0)
+
+    result = (data - min) / (max - min)
+
+    return result
+
+# Função que retorna as transpostas
+def get_transpose (entries, outputs):
+
+    return entries.T, outputs.T
 

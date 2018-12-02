@@ -170,3 +170,8 @@ def get_transpose (entries, outputs):
 
     return entries.T, outputs.T
 
+def divide_train_test(data, factor):
+    training, test = data[:round(len(data) * factor), :], data[round(len(data) * factor):, :]
+    return training, test
+
+

@@ -20,20 +20,31 @@ if __name__ == '__main__':
 
     np.set_printoptions(suppress=True)
 
+
     entries = feature_normalization(entries)
-    entries, outputs = get_transpose(entries, outputs)
 
-    layers_dims = (entries.shape[0], 5, outputs.shape[0])
+    entries_training, entries_test = divide_train_test(entries, 0.75)
 
-    NN = NeuralNetwork(0.7, entries, outputs, layers_dims, epochs=10000)
+    outputs_training, outputs_test = divide_train_test(outputs, 0.75)
+
+    entries_training, entries_test = get_transpose(entries_training, entries_test)
+    outputs_training, outputs_test = get_transpose(outputs_training, outputs_test)
+
+
+
+
+    layers_dims = (entries_training.shape[0], 4, outputs_training.shape[0])
+
+    NN = NeuralNetwork(0.4, entries_training, outputs_training, layers_dims, epochs=10000)
 
     NN.train()
 
-    #
-    # entry = np.array([[0, 0, 0]]).T
-    # entry2 = np.array([[1, 0, 0]]).T
+    print("TRAINING")
+    NN.predict2(entries_training, outputs_training)
+    print("TEST")
+    NN.predict2(entries_test, outputs_test)
 
-    # print(NN.accuracy(entries, outputs))
+
 
 
 

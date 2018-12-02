@@ -39,70 +39,47 @@ if __name__ == '__main__':
         sys.exit('Error! The input format is: ./backpropagation network.txt initial_weights.txt dataset.txt')
 
     np.set_printoptions(suppress=True)
-
+    #
     # X, Y, parameters = gradient_check_n_test_case()
     #
-    # Y = np.reshape(Y, (3,1))
+    # layers_dims = (4, 5, 3, 1)
     #
-    # layers_dims = (X.shape[0], 5,3, Y.shape[0])
+    # NN = NeuralNetwork(0, X, Y, layers_dims, epochs=5000,weights=parameters)
     #
-    # NN = NeuralNetwork(0, X, Y, layers_dims, epochs=5000)
-    #
-    # a, cache = NN.forward_propagation(X, parameters)
-    #
-    # exit()
-    #
-    #
-    #
-    #
-    # exit()
-
-    X, Y, parameters = gradient_check_n_test_case()
-
-    layers_dims = (4, 5, 3, 1)
-
-    NN = NeuralNetwork(0, X, Y, layers_dims, epochs=5000,weights=parameters)
-
-
-    NN.train()
-
-
-    # a = NN.forward_propagation(X, parameters)
-    # b = NN.backward_propagation()
-    # exit()
-
-    gradients = ba(X, Y, cache)
-    difference = gradient_check_n(parameters, gradients, X, Y)
-
-
-
-    # entries = feature_normalization(entries)
-    # entries, outputs = get_transpose(entries,outputs)
-    #
-    # entries_training, entries_test = divide_train_test(entries, 0.75)
-    #
-    # outputs_training, outputs_test = divide_train_test(outputs, 0.75)
-    #
-    # entries_training, entries_test = get_transpose(entries_training, entries_test)
-    # outputs_training, outputs_test = get_transpose(outputs_training, outputs_test)
-
-
-    # layers_dims = (entries.shape[1], 4, outputs.shape[1])
-    #
-    # NN = NeuralNetwork(0, entries.T, outputs.T, layers_dims, epochs=5000)
     #
     # NN.train()
-
-    # print("TRAINING")
-    # NN.predict2(entries_training, outputs_training)
-    # print("TEST")
-    # NN.predict2(entries_test, outputs_test)
-
-    # print(NN.forward_propagation(entries, NN.weights))
-    # exit()
     #
-    # NN.gradient_check_n()
+    #
+    # # a = NN.forward_propagation(X, parameters)
+    # # b = NN.backward_propagation()
+    # # exit()
+    #
+    # gradients = ba(X, Y, cache)
+    # difference = gradient_check_n(parameters, gradients, X, Y)
 
+
+    entries = feature_normalization(entries)
+    entries_training, entries_test = divide_train_test(entries, 0.75)
+    outputs_training, outputs_test = divide_train_test(outputs, 0.75)
+
+    layers_dims = (entries_training.shape[1], 4, outputs_training.shape[1])
+
+    NN = NeuralNetwork(1.2, entries_training.T, outputs_training.T, layers_dims, iterations=10000)
+
+    grads, approx = NN.get_gradients_to_compare(entries_training.T)
+
+    NN.compare_gradients(grads,approx)
+    exit()
+
+    weights, gradients = NN.train()
+
+    print("Training")
+    NN.predict2(entries_training.T, outputs_training.T)
+
+    print("Test")
+    NN.predict2(entries_test.T, outputs_test.T)
+
+    exit()
 
 
 

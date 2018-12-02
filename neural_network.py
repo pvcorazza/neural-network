@@ -3,7 +3,7 @@ import copy
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, reg_factor, entries, outputs, layers, learning_rate=1.2, epochs = 1000000, weights=None):
+    def __init__(self, reg_factor, entries, outputs, layers, learning_rate=1.2, iterations = 1000000, weights=None):
 
         # Definição dos parâmetros
         self.reg_factor = reg_factor
@@ -11,10 +11,9 @@ class NeuralNetwork:
         self.outputs = outputs
         self.layers = layers
         self.learning_rate = learning_rate
-        self.epochs = epochs
-        self.num_examples = 4
+        self.iterations = iterations
+        self.num_examples = outputs.shape[0]
         self.weights = weights
-        # self.momentum = 1
         self.J = []
         self.gradients = {}
 
@@ -27,6 +26,8 @@ class NeuralNetwork:
                 self.weights['W' + str(l)] = 2 * np.random.randn(self.layers[l], self.layers[l - 1]) - 1
                 # Bias
                 self.weights['b' + str(l)] = np.ones(shape=(self.layers[l], 1))
+
+        return self.weights
 
     # Função sigmóide
     def calculate_sigmoid(self, sum):
@@ -58,7 +59,13 @@ class NeuralNetwork:
     # Função para calcular o custo
     # Necessário inserir a regularização
     def calculate_cost(self, AL):
+
         cost = - np.sum(np.multiply(np.log(AL), self.outputs) + np.multiply((1 - self.outputs), np.log(1 - AL))) / self.num_examples
+        regularization = self.calculate_regularization()
+
+        return cost + regularization
+
+    def calculate_regularization(self):
 
         sum = 0
 
@@ -67,7 +74,7 @@ class NeuralNetwork:
 
         regularization = (1 / self.num_examples) * (self.reg_factor / 2) * sum
 
-        return cost #+ regularization
+        return regularization
 
     # def backward_propagation(self):
     #
@@ -100,21 +107,19 @@ class NeuralNetwork:
 
         dZ = self.activations["a" + str(len(self.activations))] - self.outputs
 
-        self.gradients["dW" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(len(self.activations)-1)].T) #+ self.reg_factor/self.num_examples * self.weights["W" + str(len(caches))]
+        self.gradients["dW" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(len(self.activations)-1)].T) + self.reg_factor/self.num_examples * self.weights["W" + str(len(self.activations)-1)]
         self.gradients["db" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.sum(dZ, axis=1, keepdims=True)
-
-
 
         for l in reversed(range(2, len(self.activations))):
 
             dZ = np.dot(self.weights["W" + str(l)].T, dZ) * self.calculate_derivative_sigmoid(self.activations["a" + str(l)])
 
-            self.gradients["dW" + str(l-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(l-1)].T) #+ self.reg_factor/self.num_examples * self.weights["W" + str(l + 1)]
+            self.gradients["dW" + str(l-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(l-1)].T) + self.reg_factor/self.num_examples * self.weights["W" + str(l - 1)]
             self.gradients["db" + str(l-1)] = (1 / self.num_examples) * np.sum(dZ, axis=1, keepdims=True)
 
         return self.gradients
 
-    def update_parameters(self):
+    def update_weights(self):
         for l in range(len(self.weights) // 2):
             self.weights["W" + str(l + 1)] -= self.learning_rate * self.gradients["dW" + str(l + 1)]
             self.weights["b" + str(l + 1)] -= self.learning_rate * self.gradients["db" + str(l + 1)]
@@ -127,7 +132,7 @@ class NeuralNetwork:
         self.init_weights()
 
         # Loop (gradient descent)
-        for i in range(0, self.epochs):
+        for i in range(0, self.iterations):
 
             # Propagar o exemplo pela rede, calculando sua saída fθ(x)
             AL = self.forward_propagation(self.entries, self.weights)
@@ -140,13 +145,15 @@ class NeuralNetwork:
             # Backward propagation.
             self.backward_propagation()
 
+            # Copia pesos e gradientes para verificação, antes da atualização dos pesos
+            weights = copy.deepcopy(self.weights)
+            gradients = copy.deepcopy(self.gradients)
 
-            self.gradient_check_n()
+            # grads, approx = self.gradient_check_n(self.weights, self.gradients)
+            # self.compare_gradients(grads, approx)
 
-            exit()
-
-            # Atualiza parâmetros.
-            self.update_parameters()
+            # Atualiza os pesos
+            self.update_weights()
 
             # Print the cost every 100 training example
             if i % 1000 == 0:
@@ -155,7 +162,7 @@ class NeuralNetwork:
                 # print(AL)
                 print("Erro: %.8f" % mediaAbsoluta)
 
-        return self.weights
+        return weights, gradients
 
     def predict(self, entry):
 
@@ -188,7 +195,7 @@ class NeuralNetwork:
         p = np.zeros((1, m), dtype=np.int)
 
         # Forward propagation
-        a3, caches = self.forward_propagation(X, self.weights)
+        a3 = self.forward_propagation(X, self.weights)
 
         # convert probas to 0/1 predictions
         for i in range(0, a3.shape[1]):
@@ -205,29 +212,27 @@ class NeuralNetwork:
 
         return p
 
-
-    def weights_to_vector(self):
+    def weights_to_vector(self, weights):
 
         vector_weights = np.matrix([]).reshape((0,1))
-        weight_sizes = {}
 
         for i in range(len(self.weights) // 2):
 
-            vector_w = np.reshape(self.weights["W" + str(i + 1)], (-1, 1))
-            vector_b = np.reshape(self.weights["b" + str(i + 1)], (-1, 1))
+            vector_w = np.reshape(weights["W" + str(i + 1)], (-1, 1))
+            vector_b = np.reshape(weights["b" + str(i + 1)], (-1, 1))
             concat = np.concatenate((vector_w, vector_b),axis=0)
             vector_weights = np.concatenate((vector_weights, concat),axis=0)
 
         return vector_weights
 
 
-    def gradients_to_vector(self):
+    def gradients_to_vector(self, gradients):
 
         vector_gradients = np.matrix([]).reshape((0,1))
         for i in range(len(self.weights) // 2):
 
-            vector_w = np.reshape(self.gradients["dW" + str(i + 1)], (-1, 1))
-            vector_b = np.reshape(self.gradients["db" + str(i + 1)], (-1, 1))
+            vector_w = np.reshape(gradients["dW" + str(i + 1)], (-1, 1))
+            vector_b = np.reshape(gradients["db" + str(i + 1)], (-1, 1))
             concat = np.concatenate((vector_w, vector_b),axis=0)
             vector_gradients = np.concatenate((vector_gradients, concat),axis=0)
 
@@ -235,9 +240,6 @@ class NeuralNetwork:
 
 
     def vector_to_dictionary(self, vector_weights):
-        """
-        Unroll all our parameters dictionary from a single vector satisfying our specific required shape.
-        """
 
         dic = {}
 
@@ -254,63 +256,59 @@ class NeuralNetwork:
 
         return dic
 
-    def gradient_check_n(self, epsilon=1e-7):
+    def gradient_check_n(self, weights, gradients, epsilon=1e-7):
 
+        # Descarta regularização
+        for i in range(1, len(gradients)-1):
+            gradients["dW" + str(i)] = gradients["dW" + str(i)] - self.reg_factor / self.num_examples * self.weights["W" + str(i)]
 
-        vector_weights = self.weights_to_vector()
-        vector_gradients = self.gradients_to_vector()
+        vector_weights = self.weights_to_vector(weights)
+        vector_gradients = self.gradients_to_vector(gradients)
 
         num_parameters = vector_weights.shape[0]
         J_plus = np.zeros((num_parameters, 1))
         J_minus = np.zeros((num_parameters, 1))
-        gradapprox = np.zeros((num_parameters, 1))
+        grad_approx = np.zeros((num_parameters, 1))
 
-        # Compute gradapprox
         for i in range(num_parameters):
-            # Compute J_plus[i]. Inputs: "parameters_values, epsilon". Output = "J_plus[i]".
-            # "_" is used because the function you have to outputs two parameters but we only care about the first one
-            ### START CODE HERE ### (approx. 3 lines)
-            thetaplus = np.copy(vector_weights)  # Step 1
-            thetaplus[i][0] += epsilon  # Step 2
 
+            thetaplus = copy.deepcopy(vector_weights)
+            thetaplus[i][0] += epsilon
+            a = self.forward_propagation(self.entries, self.vector_to_dictionary(thetaplus))
+            J_plus[i] = self.calculate_cost(a) - self.calculate_regularization()
 
-            dicio = self.vector_to_dictionary(thetaplus)
-            a = self.forward_propagation(self.entries, dicio)  # Step 34
-
-
-            J_plus[i] = self.calculate_cost(a)
-
-            # Compute J_minus[i]. Inputs: "parameters_values, epsilon". Output = "J_minus[i]".
-            ### START CODE HERE ### (approx. 3 lines)
-            thetaminus = np.copy(vector_weights)  # Step 1
-            thetaminus[i][0] -= epsilon  # Step 2
+            thetaminus = np.copy(vector_weights)
+            thetaminus[i][0] -= epsilon
             a = self.forward_propagation(self.entries, self.vector_to_dictionary(thetaminus))
-            J_minus[i] = self.calculate_cost(a)
+            J_minus[i] = self.calculate_cost(a) - self.calculate_regularization()
 
-            ### END CODE HERE ###
+            grad_approx[i] = (J_plus[i] - J_minus[i]) / (2 * epsilon)
 
-            # Compute gradapprox[i]
-            ### START CODE HERE ### (approx. 1 line)
+        return vector_gradients, grad_approx
 
-            gradapprox[i] = (J_plus[i] - J_minus[i]) / (2 * epsilon)
-
-
-            ### END CODE HERE ###
-
-        # Compare gradapprox to backward propagation gradients by computing difference.
-        ### START CODE HERE ### (approx. 1 line)
-        numerator = np.linalg.norm(vector_gradients - gradapprox)  # Step 1'
-        denominator = np.linalg.norm(vector_gradients) + np.linalg.norm(gradapprox)  # Step 2'
+    def compare_gradients(self, backward_gradients, grad_approx):
+        numerator = np.linalg.norm(backward_gradients - grad_approx)
+        denominator = np.linalg.norm(backward_gradients) + np.linalg.norm(grad_approx)
         difference = numerator / denominator  # Step 3'
-        ### END CODE HERE ###
 
-        if difference > 2e-7:
+        if difference > 2e-6:
             print(
                 "\033[93m" + "There is a mistake in the backward propagation! difference = " + str(difference) + "\033[0m")
         else:
             print(
                 "\033[92m" + "Your backward propagation works perfectly fine! difference = " + str(difference) + "\033[0m")
 
-        exit()
-
         return difference
+
+    def get_gradients_to_compare(self, entries, weights=None):
+        if (weights==None):
+            weights = self.init_weights()
+
+        # Propagar o exemplo pela rede, calculando sua saída fθ(x)
+        self.forward_propagation(entries, weights)
+
+        # Backward propagation.
+        gradients = self.backward_propagation()
+
+        grads, approx = self.gradient_check_n(weights, gradients)
+        return grads, approx

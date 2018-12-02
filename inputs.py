@@ -104,7 +104,7 @@ def read_network_file(name):
 
     reg_factor = float(file.readline())
     network_info = file.readlines()
-    network_info = [int(i) for i in network_info]
+    network_info = tuple([int(i) for i in network_info])
 
     return reg_factor, network_info
 
@@ -122,7 +122,6 @@ def read_weights_file(name):
         weights_array = np.asarray([[float(weight) for weight in entry] for entry in layer])
         bias = weights_array[:, 0]
         layer_weight = np.delete(weights_array, 0, axis=1)
-
         weights['W' + str(i)] = layer_weight
         weights['b' + str(i)] = np.reshape(bias,(len(bias),1))
         i =i+1

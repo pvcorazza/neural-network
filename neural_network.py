@@ -139,8 +139,6 @@ class NeuralNetwork:
 
             # Calcula custo
             cost = self.calculate_cost(AL)
-            erroCamadaSaida = AL - self.outputs
-            mediaAbsoluta = np.mean(np.abs(erroCamadaSaida))
 
             # Backward propagation.
             self.backward_propagation()
@@ -305,10 +303,21 @@ class NeuralNetwork:
             weights = self.init_weights()
 
         # Propagar o exemplo pela rede, calculando sua saída fθ(x)
-        self.forward_propagation(entries, weights)
-
+        a = self.forward_propagation(entries, weights)
+        print("Saida preditas para os exemplos")
+        print(a)
+        print("Custo do dataset")
+        # Calcula custo
+        cost = self.calculate_cost(a)
+        print(cost)
         # Backward propagation.
         gradients = self.backward_propagation()
 
         grads, approx = self.gradient_check_n(weights, gradients)
+        print("Gradientes do BackPropagation")
+        print(grads)
+        print("Gradientes da Aproximação")
+        print(approx)
+        exit()
+
         return grads, approx

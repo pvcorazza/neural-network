@@ -4,9 +4,6 @@ import csv
 import numpy as np
 
 def read_data(filename):
-    if filename == "benchmark.csv":
-        data = list(csv.reader(open("data/" + filename, "r"), delimiter=";"))
-        return data
 
     data = list(csv.reader(open("data/" + filename, "r"), delimiter=","))
     if not data:
@@ -169,8 +166,26 @@ def get_transpose (entries, outputs):
 
     return entries.T, outputs.T
 
+# Divide dado em conjuntos de treinamento e teste
 def divide_train_test(data, factor):
     training, test = data[:round(len(data) * factor), :], data[round(len(data) * factor):, :]
     return training, test
+
+def save_gradients(gradients, name, numeric=False):
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
+
+    with open(name, 'w') as file:
+        for i in range(1, (len(gradients)//2) + 1):
+            if numeric:
+                array = np.append(gradients["b" + str(i)], gradients["W" + str(i)], axis=1)
+            else:
+                array = np.append(gradients["db" + str(i)], gradients["dW" + str(i)], axis=1)
+            line=""
+            for array_line in array:
+                array_line = np.array2string(array_line, precision=5, separator=', ')
+                line = "".join([line,array_line[1:-1]]) + "; "
+            file.write(line[:-2]+"\n")
+
+
 
 

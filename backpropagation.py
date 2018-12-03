@@ -18,49 +18,41 @@ if __name__ == '__main__':
     else:
         sys.exit('Error! The input format is: ./backpropagation network.txt initial_weights.txt dataset.txt')
 
-    np.set_printoptions(suppress=True)
-
-    print(structure)
-
-    #
-    # X, Y, parameters = gradient_check_n_test_case()
-    #
-    # layers_dims = (4, 5, 3, 1)
-    #
-    # NN = NeuralNetwork(0, X, Y, layers_dims, epochs=5000,weights=parameters)
-    #
-    #
-    # NN.train()
-    #
-    #
-    # # a = NN.forward_propagation(X, parameters)
-    # # b = NN.backward_propagation()
-    # # exit()
-    #
-    # gradients = ba(X, Y, cache)
-    # difference = gradient_check_n(parameters, gradients, X, Y)
-
     # entries = feature_normalization(entries)
-    # entries_training, entries_test = divide_train_test(entries, 0.75)
-    # outputs_training, outputs_test = divide_train_test(outputs, 0.75)
 
-    NN = NeuralNetwork(lb, entries.T, outputs.T, structure, iterations=10000, weights=weights)
+    np.set_printoptions(precision=5,suppress=True)
+    print("------------------------------------------------------")
+    print("----  INF01017 - Aprendizado de Máquina (2018/2)  ----")
+    print("---- Trabalho 2 - Redes Neurais (Backpropagation) ----")
+    print("----             Paulo Victor Corazza             ----")
+    print("------------------------------------------------------")
+    print("1. Inicializando rede neural")
+    print("* Estrutura: " + str(structure))
+    print("* Parâmetro lambda: " + str(lb))
+    print()
+    print("* Pesos: ")
 
+    for i in range(1, len(structure)):
+        print("\tW" + str(i) + " = " + str(weights["W" + str(i)]).replace('\n','\n\t\t '))
+
+        print("\tb" + str(i) + " = " + str(weights["b" + str(i)]).replace('\n','\n\t\t '))
+
+    print()
+    print("* Conjunto de treinamento normalizado: ")
+    print("\tEntradas = "+str(entries).replace('\n','\n\t\t\t   '))
+    print("\tSaídas =   "+str(outputs).replace('\n','\n\t\t\t   '))
+    print()
+
+    NN = NeuralNetwork(lb, entries.T, outputs.T, structure, iterations=100000, learning_rate=0.1, weights=weights)
     grads, approx = NN.get_gradients_to_compare(entries.T)
-
     NN.compare_gradients(grads,approx)
-    exit()
 
-    weights, gradients = NN.train()
+    print("Salvando gradientes do backpropagation no arquivo \"gradients_backpropagation.txt\"...")
 
-    print("Training")
-    NN.predict2(entries_training.T, outputs_training.T)
-
-    print("Test")
-    NN.predict2(entries_test.T, outputs_test.T)
+    save_gradients(grads,"gradients_backpropagation.txt")
+    # save_gradients(approx,"gradients_numeric.txt", numeric=True)
 
     exit()
-
 
 
 

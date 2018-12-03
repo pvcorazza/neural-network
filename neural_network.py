@@ -105,19 +105,25 @@ class NeuralNetwork:
 
         # linear_cache, activation_cache = caches[len(caches) - 1]
 
+        regularizations = {}
+
         dZ = self.activations["a" + str(len(self.activations))] - self.outputs
 
-        self.gradients["dW" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(len(self.activations)-1)].T) + self.reg_factor/self.num_examples * self.weights["W" + str(len(self.activations)-1)]
+        reg = self.reg_factor/self.num_examples * self.weights["W" + str(len(self.activations)-1)]
+        self.gradients["dW" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(len(self.activations)-1)].T) + reg
+        regularizations["rW" + str(len(self.activations)-1)] = reg
         self.gradients["db" + str(len(self.activations)-1)] = (1 / self.num_examples) * np.sum(dZ, axis=1, keepdims=True)
+
 
         for l in reversed(range(2, len(self.activations))):
 
             dZ = np.dot(self.weights["W" + str(l)].T, dZ) * self.calculate_derivative_sigmoid(self.activations["a" + str(l)])
-
-            self.gradients["dW" + str(l-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(l-1)].T) + self.reg_factor/self.num_examples * self.weights["W" + str(l - 1)]
+            reg = self.reg_factor / self.num_examples * self.weights["W" + str(l - 1)]
+            self.gradients["dW" + str(l-1)] = (1 / self.num_examples) * np.dot(dZ, self.activations["a" + str(l-1)].T) + reg
+            regularizations["rW" + str(l-1)] = reg
             self.gradients["db" + str(l-1)] = (1 / self.num_examples) * np.sum(dZ, axis=1, keepdims=True)
 
-        return self.gradients
+        return self.gradients, regularizations
 
     def update_weights(self):
         for l in range(len(self.weights) // 2):
@@ -157,8 +163,7 @@ class NeuralNetwork:
             if i % 1000 == 0:
                 print("Cost after iteration %i: %f" % (i, cost))
                 self.J.append(cost)
-                # print(AL)
-                print("Erro: %.8f" % mediaAbsoluta)
+                print(AL)
 
         return weights, gradients
 
@@ -227,7 +232,7 @@ class NeuralNetwork:
     def gradients_to_vector(self, gradients):
 
         vector_gradients = np.matrix([]).reshape((0,1))
-        for i in range(len(self.weights) // 2):
+        for i in range((len(self.layers) - 1) ):
 
             vector_w = np.reshape(gradients["dW" + str(i + 1)], (-1, 1))
             vector_b = np.reshape(gradients["db" + str(i + 1)], (-1, 1))
@@ -254,14 +259,9 @@ class NeuralNetwork:
 
         return dic
 
-    def gradient_check_n(self, weights, gradients, epsilon=1e-7):
-
-        # Descarta regularização
-        for i in range(1, len(gradients)-1):
-            gradients["dW" + str(i)] = gradients["dW" + str(i)] - self.reg_factor / self.num_examples * self.weights["W" + str(i)]
+    def get_numeric_gradient(self, weights, regularizations, epsilon=0.000001):
 
         vector_weights = self.weights_to_vector(weights)
-        vector_gradients = self.gradients_to_vector(gradients)
 
         num_parameters = vector_weights.shape[0]
         J_plus = np.zeros((num_parameters, 1))
@@ -273,20 +273,30 @@ class NeuralNetwork:
             thetaplus = copy.deepcopy(vector_weights)
             thetaplus[i][0] += epsilon
             a = self.forward_propagation(self.entries, self.vector_to_dictionary(thetaplus))
-            J_plus[i] = self.calculate_cost(a) - self.calculate_regularization()
+            J_plus[i] = self.calculate_cost(a)
 
-            thetaminus = np.copy(vector_weights)
+            thetaminus = copy.deepcopy(vector_weights)
             thetaminus[i][0] -= epsilon
             a = self.forward_propagation(self.entries, self.vector_to_dictionary(thetaminus))
-            J_minus[i] = self.calculate_cost(a) - self.calculate_regularization()
+            J_minus[i] = self.calculate_cost(a)
 
             grad_approx[i] = (J_plus[i] - J_minus[i]) / (2 * epsilon)
 
-        return vector_gradients, grad_approx
+        aprox_dic = self.vector_to_dictionary(grad_approx)
+
+        # Adiciona regularização
+        for i in range(1, len(self.layers)):
+            aprox_dic["W" + str(i)] = aprox_dic["W" + str(i)] + regularizations["rW" + str(i)]
+
+        return aprox_dic
 
     def compare_gradients(self, backward_gradients, grad_approx):
-        numerator = np.linalg.norm(backward_gradients - grad_approx)
-        denominator = np.linalg.norm(backward_gradients) + np.linalg.norm(grad_approx)
+        vector_gradients = self.gradients_to_vector(backward_gradients)
+        vector_numeric = self.weights_to_vector(grad_approx)
+
+
+        numerator = np.linalg.norm(vector_gradients - vector_numeric)
+        denominator = np.linalg.norm(vector_gradients) + np.linalg.norm(vector_numeric)
         difference = numerator / denominator  # Step 3'
 
         if difference > 2e-6:
@@ -302,22 +312,27 @@ class NeuralNetwork:
         if (weights==None):
             weights = self.init_weights()
 
+        print("Iniciando propagação...")
         # Propagar o exemplo pela rede, calculando sua saída fθ(x)
         a = self.forward_propagation(entries, weights)
-        print("Saida preditas para os exemplos")
-        print(a)
-        print("Custo do dataset")
+        print("\tSaídas preditas: " + str(a).replace('\n','\n\t\t\t\t\t '))
         # Calcula custo
         cost = self.calculate_cost(a)
-        print(cost)
+        print("\tCusto (J): " + str(cost).replace('\n', '\n\t'))
+        print("Iniciando backpropagation...")
         # Backward propagation.
-        gradients = self.backward_propagation()
+        gradients, regularizations = self.backward_propagation()
+        print("Gradientes retornados: ")
+        for i in range(1, len(self.layers)):
+            print("\tdW" + str(i) + " = " + str(gradients["dW" + str(i)]).replace('\n', '\n\t\t  '))
+            print("\tdb" + str(i) + " = " + str(gradients["db" + str(i)]).replace('\n', '\n\t\t  '))
+        print()
+        print("Iniciando verificação númerica do gradiente...")
+        approx = self.get_numeric_gradient(weights, regularizations)
 
-        grads, approx = self.gradient_check_n(weights, gradients)
-        print("Gradientes do BackPropagation")
-        print(grads)
-        print("Gradientes da Aproximação")
-        print(approx)
-        exit()
+        print("Gradientes numéricos: ")
+        for i in range(1, len(self.layers)):
+            print("\tndW" + str(i) + " = " + str(approx["W" + str(i)]).replace('\n', '\n\t\t   '))
+            print("\tndb" + str(i) + " = " + str(approx["b" + str(i)]).replace('\n', '\n\t\t   '))
 
-        return grads, approx
+        return gradients, approx
